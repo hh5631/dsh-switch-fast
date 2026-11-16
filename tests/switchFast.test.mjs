@@ -149,6 +149,23 @@ test('cross-fades a session switch only once the new session really has messages
   assert.equal(f.head.kids.length, 0, 'removes its stylesheet on dispose')
 })
 
+test('skips the cross-fade while the page is hidden', () => {
+  const f = fixture()
+  f.select('A')
+  f.render('A')
+  assert.equal(f.transitions.length, 0)
+  // 页面不可见时不值得为一个看不见的过渡占合成帧，直接走原生切换。
+  f.document.visibilityState = 'hidden'
+  f.select('B')
+  assert.equal(f.transitions.length, 0, 'no transition is started in a hidden page')
+  f.document.visibilityState = 'visible'
+  f.render('B')
+  f.paint()
+  f.select('C')
+  assert.equal(f.transitions.length, 1, 'visible page still cross-fades')
+  f.stop()
+})
+
 test('reuses two prior conversations and evicts on budget, archive, reconnect or expiry', () => {
   const f = fixture({ A: 150, B: 170, C: 150, D: 1300 })
   for (const id of ['A', 'B', 'C', 'A']) f.select(id)

@@ -12,7 +12,15 @@
 预算按 DSH 定义的消息计数，并非事件数或字节数。单个超大工具结果仍可能让一页偏重；应用的历史解析、React 渲染仍在 DSH 原来的链路上。本插件不改消息、附件、草稿或工具输出，也不接管其他面板的按钮。
 
 ```sh
-dsh plugin --profile web add link:/Users/wanghao/DSH/dsh-switch-fast
+# 方式一：预构建 tarball（推荐，无需构建授权）
+dsh plugin --profile web add https://github.com/hh5631/dsh-switch-fast/releases/latest/download/dsh-switch-fast.tgz
+
+# 方式二：直接从 GitHub 源码安装
+dsh plugin --profile web add github:hh5631/dsh-switch-fast
+
+# 方式三：本地克隆后安装
+git clone https://github.com/hh5631/dsh-switch-fast.git
+dsh plugin --profile web add link:$PWD/dsh-switch-fast
 ```
 
 如果安装过旧名字，先移除 `dsh-session-switch-fast`，避免同时装两版。重启 DSH Web 并刷新网页后，启动时读取新的 bundle。可以从插件管理停用，或用 `dsh plugin --profile web remove dsh-switch-fast` 移除。

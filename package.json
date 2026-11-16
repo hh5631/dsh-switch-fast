@@ -1,6 +1,6 @@
 {
   "name": "dsh-switch-fast",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "DSH Web 对话加速：分批加载历史，短时复用最近的对话。",
   "type": "module",
   "main": "./lib/index.js",
@@ -23,6 +23,14 @@
       "inject": ["@deepseek-ai/dsh-api-session-controller", "@deepseek-ai/dsh-client-ui-workspace"],
       "external": ["@deepseek-ai/dsh-api-session-controller/client"]
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hh5631/dsh-switch-fast.git"
+  },
+  "homepage": "https://github.com/hh5631/dsh-switch-fast#readme",
+  "bugs": {
+    "url": "https://github.com/hh5631/dsh-switch-fast/issues"
   },
   "license": "MIT"
 }

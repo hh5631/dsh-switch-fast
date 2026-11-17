@@ -182,6 +182,56 @@ test('reuses two prior conversations and evicts on budget, archive, reconnect or
   f.stop()
 })
 
+test('holds the cross-fade while the new panel is still growing', async () => {
+  const f = fixture()
+  f.select('A')
+  f.render('A')
+  f.select('B')
+  const { done } = f.transitions[0]
+  let released = false
+  done.then(() => { released = true })
+
+  // 消息节点已就位，但高度第一帧 500、下一帧变成 780（图片/代码块撑开）：
+  // 这时候淡入就是边淡边跳，必须先等高度稳定。
+  f.render('B', 1)
+  f.paint()
+  await Promise.resolve(); await Promise.resolve()
+  assert.equal(released, false, 'a panel that just changed height is not stable yet')
+
+  f.panel.scrollHeight = 780
+  f.paint(); f.paint()
+  await Promise.resolve(); await Promise.resolve()
+  assert.ok(released, 'released once two frames agree on the height')
+
+  // 一直在长的面板也不能把旧画面钉到上限：最多再等 3 帧就放行。
+  f.select('C')
+  const taller = f.transitions[1]
+  let secondReleased = false
+  taller.done.then(() => { secondReleased = true })
+  let height = 900
+  f.render('C', 1)
+  for (let index = 0; index < 6 && !secondReleased; index += 1) {
+    f.panel.scrollHeight = height += 10
+    f.paint()
+    await Promise.resolve(); await Promise.resolve()
+  }
+  assert.ok(secondReleased, 'a continuously growing panel still releases within its frame budget')
+  f.stop()
+})
+
+test('cross-fade stays a pure opacity fade and respects reduced motion', () => {
+  const f = fixture()
+  const css = f.head.kids[0].textContent
+  const animation = /::view-transition-new\(dsh-switch-fast-panel\) \{ animation: (\d+)ms ([^;]+); \}/.exec(css)
+  assert.ok(animation, 'the new panel gets an explicit animation')
+  assert.equal(animation[1], '180', 'the fade is brisk enough not to feel laggy')
+  // 位移让新旧两版文字在淡入期间错位，字形发虚，比不动更像抖动。
+  assert.doesNotMatch(css, /translateY|translate3d|scale\(/, 'no transform: the two panels must stay aligned')
+  assert.match(css, /@keyframes dsh-switch-fast-in \{ from \{ opacity: 0; \} to \{ opacity: 1; \} \}/)
+  assert.match(css, /prefers-reduced-motion: reduce/)
+  f.stop()
+})
+
 test('releases the previous wait when a switch is overtaken by a faster one', async () => {
   const f = fixture()
   f.select('A')

@@ -181,3 +181,64 @@ test('reuses two prior conversations and evicts on budget, archive, reconnect or
   assert.deepEqual([...f.live.keys()], ['A'])
   f.stop()
 })
+
+test('releases the previous wait when a switch is overtaken by a faster one', async () => {
+  const f = fixture()
+  f.select('A')
+  f.render('A')
+  f.select('B')
+  assert.equal(f.transitions.length, 1)
+  const first = f.transitions[0]
+  let firstReleased = false
+  first.done.then(() => { firstReleased = true })
+  f.render('B', 0)
+  f.paint(); f.paint()
+  await Promise.resolve(); await Promise.resolve()
+  assert.equal(firstReleased, false, 'still waiting for the first switch to paint')
+
+  // 没等 B 出内容就切到 C：旧等待必须立刻放行，否则它还会挂着 document 观察器再等 240ms。
+  f.select('C')
+  assert.equal(f.transitions.length, 2, 'the newer switch still gets its own transition')
+  await Promise.resolve(); await Promise.resolve()
+  assert.ok(firstReleased, 'the overtaken transition is finished instead of running out its cap')
+  assert.equal(f.observers.filter(observer => !observer.off).length, 1, 'only the live wait keeps an observer')
+  f.stop()
+  assert.equal(f.observers.filter(observer => !observer.off).length, 0, 'dispose leaves no observer behind')
+})
+
+test('finishes a pending switch when the plugin is disposed', async () => {
+  const f = fixture()
+  f.select('A')
+  f.render('A')
+  f.select('B')
+  assert.equal(f.transitions.length, 1)
+  let released = false
+  f.transitions[0].done.then(() => { released = true })
+  f.stop()
+  await Promise.resolve(); await Promise.resolve()
+  assert.ok(released, 'the pending wait is released on teardown')
+  assert.equal(f.observers.filter(observer => !observer.off).length, 0)
+})
+
+test('finishes a pending wait when the page goes to the background', async () => {
+  const f = fixture()
+  f.select('A')
+  f.render('A')
+  f.select('B')
+  assert.equal(f.transitions.length, 1)
+  let released = false
+  f.transitions[0].done.then(() => { released = true })
+  f.render('B', 0)
+  f.paint(); f.paint()
+  await Promise.resolve(); await Promise.resolve()
+  assert.equal(released, false, 'still waiting for the new session to paint messages')
+
+  // 后台标签页不该为一个看不见的过渡继续跑 rAF：可见性一变就结束等待。
+  f.document.visibilityState = 'hidden'
+  f.document.dispatch('visibilitychange')
+  await Promise.resolve(); await Promise.resolve()
+  assert.ok(released, 'a hidden page releases the pending transition immediately')
+  assert.equal(f.observers.filter(observer => !observer.off).length, 0, 'its observer is gone')
+  f.advance(1000)
+  f.stop()
+})

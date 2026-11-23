@@ -1,6 +1,6 @@
 # dsh-switch-fast
 
-原 `dsh-session-switch-fast`，适用于 DSH Web `0.2.2-rc.3`。
+原 `dsh-session-switch-fast`，适用于 DSH Web `0.2.2-rc.3` 和 `0.2.2-rc.5`。
 
 - 普通对话首次打开时优先取最近一轮，原生消息预算从 500 收到 24；切回有缓存的对话时，复用原生 Session 和增量订阅。
 - 向上翻阅时由 DSH 原生加载更早的消息并维持滚动位置。普通旧页的消息预算调整为 48，轮次跳转和子会话使用原生策略。

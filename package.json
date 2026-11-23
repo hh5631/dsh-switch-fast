@@ -1,6 +1,6 @@
 {
   "name": "dsh-switch-fast",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "DSH Web 对话加速：分批加载历史，短时复用最近的对话。",
   "type": "module",
   "main": "./lib/index.js",
@@ -14,7 +14,7 @@
     "check": "node --check lib/client.js && node --test tests/",
     "test": "node --test tests/"
   },
-  "engines": { "node": ">=22", "dsh": "0.2.2-rc.3" },
+  "engines": { "node": ">=22", "dsh": "0.2.2-rc.3 || 0.2.2-rc.5" },
   "dsh": {
     "bundle": { "patch": "./cordis.patch.yml" },
     "client": {

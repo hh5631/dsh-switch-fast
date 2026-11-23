@@ -15,7 +15,7 @@ function events() {
   return { addEventListener: (key, fn) => listeners.set(key, fn), removeEventListener: key => listeners.delete(key),
     dispatch: (key, event) => listeners.get(key)?.(event) }
 }
-function fixture(counts = { A: 150, B: 170, C: 150, D: 1000 }) {
+function fixture(counts = { A: 150, B: 170, C: 150, D: 1000 }, { deferTransition = false } = {}) {
   class Stream {
     constructor(kind = 'session') { this.address = { kind } }
     follow(page, signal) { return { page, signal } }
@@ -39,9 +39,10 @@ function fixture(counts = { A: 150, B: 170, C: 150, D: 1000 }) {
   } : null
   document.createElement = () => ({ attrs: {}, setAttribute(key, value) { this.attrs[key] = value }, remove() { head.kids = head.kids.filter(el => el !== this) } })
   document.startViewTransition = callback => {
-    const record = { callback, finished: Promise.resolve() }
+    const record = { callback, finished: deferTransition ? new Promise(() => {}) : Promise.resolve(),
+      skipTransition() { this.skipped = true } }
     transitions.push(record)
-    record.done = callback()
+    if (!deferTransition) record.done = callback()
     return record
   }
   window.matchMedia = () => ({ matches: false })
@@ -291,4 +292,20 @@ test('finishes a pending wait when the page goes to the background', async () =>
   assert.equal(f.observers.filter(observer => !observer.off).length, 0, 'its observer is gone')
   f.advance(1000)
   f.stop()
+})
+
+test('obsolete browser transition callbacks never install observers', () => {
+  const f = fixture(undefined, { deferTransition: true })
+  f.select('A')
+  f.select('B')
+  f.render('B')
+  f.select('C')
+  const [old, current] = f.transitions
+  assert.equal(old.skipped, true)
+  assert.equal(old.callback(), undefined)
+  assert.equal(f.observers.length, 0)
+  f.stop()
+  assert.equal(current.skipped, true)
+  assert.equal(current.callback(), undefined)
+  assert.equal(f.observers.length, 0)
 })
